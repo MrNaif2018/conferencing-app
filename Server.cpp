@@ -9,6 +9,7 @@
 #include <QFile>
 #include <QtConcurrent>
 #include "udpplayer.h"
+#include "screenrecorder.h"
 
 #define BUF_LEN 65540 // Larger than maximum UDP packet size
 
@@ -23,8 +24,7 @@ using namespace cv;
 
 void MyThread::run()
 {
-    qDebug() << "RUNNING";
-    unsigned short servPort = atoi(argv[1]);
+    unsigned short servPort = IMAGE_UDP_PORT;
     try
     {
         UDPSocket sock(servPort);
@@ -82,11 +82,9 @@ void MyThread::run()
 
 void MainWindow::processImage(const QImage &img)
 {
-    qDebug() << "GOT ITv1";
+    qDebug() << "GOT";
     imgpix = QPixmap::fromImage(img.copy());
-    qDebug() << "GOT ITv2";
     pixmap->setPixmap(imgpix);
-    qDebug() << "GOT ITv3";
 }
 
 void play_audio_task()
@@ -98,16 +96,17 @@ int main(int argc, char **argv)
 {
     if (argc != 2)
     { // Test for correct number of parameters
-        cerr << "Usage: " << argv[0] << " <Server Port>" << endl;
+        cerr << "Usage: " << argv[0] << " <Server>" << endl;
         exit(1);
     }
     QApplication app(argc, argv);
     new UDPPlayer();
+    start_audio_input(argv[1]);
+    ScreenRecorder recorder(argv[1]);
+    recorder.start();
     MainWindow window;
-    QPixmap("screenshot.png").save("2.png");
-    window.pixmap->setPixmap(QPixmap("screenshot.png"));
     window.show();
-    MyThread thread(argv);
+    MyThread thread;
     QObject::connect(&thread, SIGNAL(signalGUI(const QImage &)), &window, SLOT(processImage(const QImage &)));
     thread.start();
     // QtConcurrent::run(play_audio_task);

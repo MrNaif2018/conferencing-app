@@ -73,3 +73,15 @@ QAudioFormat getAudioFormat()
     }
     return format;
 }
+
+void start_audio_input(char *server)
+{
+    QAudioFormat format = getAudioFormat();
+    QAudioInput *input = new QAudioInput(format);
+    TracingUDPSocket *socket = new TracingUDPSocket();
+    socket->open(QIODevice::WriteOnly);
+    qDebug() << "Binding to port " << AUDIO_UDP_PORT;
+    socket->connectToHost(server, AUDIO_UDP_PORT);
+    socket->waitForConnected();
+    input->start(socket);
+}

@@ -22,3 +22,5 @@ private:
 };
 
 QAudioFormat getAudioFormat();
+
+void start_audio_input(char *server);

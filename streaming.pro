@@ -13,8 +13,8 @@ INCLUDEPATH+=/usr/include/opencv4
 win32: QT += winextras
 unix:!macx: LIBS += -lX11 -lXext -lXfixes
 
-SOURCES += PracticalSocket.cpp cvmatandqimage.cpp udpplayer.cpp
-HEADERS += PracticalSocket.h cvmatandqimage.h udpplayer.h
+SOURCES += PracticalSocket.cpp cvmatandqimage.cpp udpplayer.cpp screenrecorder.cpp
+HEADERS += PracticalSocket.h cvmatandqimage.h udpplayer.h imageutil.h screenrecorder.h
 
 Client {
 TARGET = Client
