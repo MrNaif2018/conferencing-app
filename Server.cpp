@@ -39,7 +39,7 @@ void MyThread::run()
         int buffer_len = 0;
         uint8_t *buffer = nullptr;
         int offset = 0;
-        while (1)
+        while (!QThread::currentThread()->isInterruptionRequested())
         {
             uvgrtp::frame::rtp_frame *frame = receiver->pull_frame(RECEIVER_WAIT_TIME_MS);
             if (!frame)
@@ -118,6 +118,8 @@ int main(int argc, char **argv)
     MyThread thread;
     QObject::connect(&thread, SIGNAL(signalGUI(const QImage &)), &window, SLOT(processImage(const QImage &)));
     thread.start();
+    QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), &thread, SLOT(terminateThread()));
+    QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), &recorder, SLOT(terminateThread()));
     // QtConcurrent::run(play_audio_task);
     return app.exec();
 }

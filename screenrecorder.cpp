@@ -24,7 +24,7 @@ void ScreenRecorder::run()
     if (hevc)
     {
         Mat image, send;
-        while (1)
+        while (!QThread::currentThread()->isInterruptionRequested())
         {
             QPixmap pixmap = imageutil::takeScreenShot(rect);
             image = QtOcv::image2Mat(pixmap.toImage());

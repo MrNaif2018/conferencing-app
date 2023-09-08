@@ -12,6 +12,12 @@ protected:
     virtual void run();
 signals:
     void signalGUI(QImage);
+public slots:
+    void terminateThread()
+    {
+        terminate();
+        wait();
+    }
 };
 
 #endif

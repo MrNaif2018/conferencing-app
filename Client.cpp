@@ -54,7 +54,7 @@ void AudioWorkerThread::run()
     qDebug() << "established";
     input->start(socket);
     qDebug() << "done";
-    while (1)
+    while (!QThread::currentThread()->isInterruptionRequested())
     {
         QThread::msleep(1000);
     }

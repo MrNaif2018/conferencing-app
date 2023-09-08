@@ -15,6 +15,12 @@ public:
 
 protected:
     virtual void run();
+public slots:
+    void terminateThread()
+    {
+        terminate();
+        wait();
+    }
 };
 
 #endif
