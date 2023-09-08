@@ -1,6 +1,5 @@
-#include "PracticalSocket.h" // For UDPSocket and SocketException
-#include <iostream>          // For cout and cerr
-#include <cstdlib>           // For atoi()
+#include <iostream> // For cout and cerr
+#include <cstdlib>  // For atoi()
 #include <QApplication>
 #include <QMainWindow>
 #include <QThread>
@@ -49,7 +48,7 @@ void MyThread::run()
                 // qDebug() << "payload_len header: " << frame->payload_len;
                 if (frame->payload_len != sizeof(int))
                 {
-                    cerr << "header size error!" << endl;
+                    std::cerr << "header size error!" << std::endl;
                     continue;
                 }
                 memcpy(&buffer_len, frame->payload, sizeof(int));
@@ -70,7 +69,7 @@ void MyThread::run()
                 Mat cvimg = imdecode(rawData, IMREAD_COLOR);
                 if (cvimg.size().width == 0)
                 {
-                    cerr << "decode failure!" << endl;
+                    std::cerr << "decode failure!" << std::endl;
                     continue;
                 }
                 resize(cvimg, cvimg, Size(1280, 720), 0, 0, INTER_LINEAR);
@@ -105,7 +104,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2)
     { // Test for correct number of parameters
-        cerr << "Usage: " << argv[0] << " <Server>" << endl;
+        std::cerr << "Usage: " << argv[0] << " <Server>" << std::endl;
         exit(1);
     }
     QApplication app(argc, argv);

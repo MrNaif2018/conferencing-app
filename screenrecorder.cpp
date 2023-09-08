@@ -6,10 +6,10 @@
 #include <uvgrtp/lib.hh>
 
 #include "screenrecorder.h"
-#include "PracticalSocket.h"
 #include "imageutil.h"
 #include "cvmatandqimage.h"
 #include "config.h"
+#include <vector>
 
 using namespace cv;
 
@@ -20,7 +20,7 @@ void ScreenRecorder::run()
     uvgrtp::session *sess = ctx.create_session(server);
     int flags = RCE_FRAGMENT_GENERIC | RCE_SEND_ONLY;
     uvgrtp::media_stream *hevc = sess->create_stream(IMAGE_UDP_PORT, RTP_FORMAT_GENERIC, flags);
-    vector<uint8_t> encoded;
+    std::vector<uint8_t> encoded;
     if (hevc)
     {
         Mat image, send;
@@ -29,7 +29,7 @@ void ScreenRecorder::run()
             QPixmap pixmap = imageutil::takeScreenShot(rect);
             image = QtOcv::image2Mat(pixmap.toImage());
             resize(image, send, Size(FRAME_WIDTH, FRAME_HEIGHT), 0, 0, INTER_LINEAR);
-            vector<int> compression_params;
+            std::vector<int> compression_params;
             compression_params.push_back(IMWRITE_JPEG_QUALITY);
             compression_params.push_back(ENCODE_QUALITY);
             imencode(".jpg", send, encoded, compression_params);

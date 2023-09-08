@@ -1,7 +1,7 @@
 TEMPLATE = app
-TARGET = streaming
+TARGET = Server
 CONFIG += ccache
-CONFIG += precompiler_header
+CONFIG += precompile_header
 #CONFIG += debug
 
 QT += gui widgets network multimedia concurrent
@@ -15,18 +15,6 @@ LIBS+= -luvgrtp
 win32: QT += winextras
 unix:!macx: LIBS += -lX11 -lXext -lXfixes
 
-SOURCES += PracticalSocket.cpp cvmatandqimage.cpp udpplayer.cpp screenrecorder.cpp
-HEADERS += PracticalSocket.h cvmatandqimage.h udpplayer.h imageutil.h screenrecorder.h
-
-Client {
-TARGET = Client
-SOURCES += Client.cpp
-HEADERS += workerthread.h audioworker.h
-}
-
-Server {
-TARGET = Server
-HEADERS += zoomui.h workerthread.h mainwindow.h
-SOURCES += Server.cpp
-}
+SOURCES += cvmatandqimage.cpp udpplayer.cpp screenrecorder.cpp Server.cpp
+HEADERS += cvmatandqimage.h udpplayer.h imageutil.h screenrecorder.h zoomui.h workerthread.h mainwindow.h
 
