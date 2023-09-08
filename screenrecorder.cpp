@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <string>
 #include "opencv2/opencv.hpp"
+#include <uvgrtp/lib.hh>
 
 #include "screenrecorder.h"
 #include "PracticalSocket.h"
@@ -15,46 +16,51 @@ using namespace cv;
 void ScreenRecorder::run()
 {
     QRect rect = QApplication::desktop()->screenGeometry();
-    string servAddress = server;
-    unsigned short servPort = IMAGE_UDP_PORT;
-    try
+    uvgrtp::context ctx;
+    uvgrtp::session *sess = ctx.create_session(server);
+    int flags = RCE_FRAGMENT_GENERIC | RCE_SEND_ONLY;
+    uvgrtp::media_stream *hevc = sess->create_stream(IMAGE_UDP_PORT, RTP_FORMAT_GENERIC, flags);
+    vector<uint8_t> encoded;
+    if (hevc)
     {
-        UDPSocket sock;
-        int jpegqual = ENCODE_QUALITY;
-        Mat frame, send;
-        vector<uchar> encoded;
-        // VideoCapture cap(0); // Grab the camera
-        clock_t last_cycle = clock();
+        Mat image, send;
         while (1)
         {
             QPixmap pixmap = imageutil::takeScreenShot(rect);
-            cv::Mat frame = QtOcv::image2Mat(pixmap.toImage());
-            if (frame.size().width == 0)
-                continue;
-            qDebug() << frame.size().width << " " << frame.size().height;
-            resize(frame, send, Size(FRAME_WIDTH, FRAME_HEIGHT), 0, 0, INTER_LINEAR);
+            image = QtOcv::image2Mat(pixmap.toImage());
+            resize(image, send, Size(FRAME_WIDTH, FRAME_HEIGHT), 0, 0, INTER_LINEAR);
             vector<int> compression_params;
             compression_params.push_back(IMWRITE_JPEG_QUALITY);
-            compression_params.push_back(jpegqual);
+            compression_params.push_back(ENCODE_QUALITY);
             imencode(".jpg", send, encoded, compression_params);
-            int total_pack = 1 + (encoded.size() - 1) / PACK_SIZE;
-            int ibuf[1];
-            ibuf[0] = total_pack;
-            qDebug() << "prepare send";
-            sock.sendTo(ibuf, sizeof(int), servAddress, servPort);
+            auto frame = std::unique_ptr<uint8_t[]>(new uint8_t[encoded.size()]);
+            memcpy(frame.get(), encoded.data(), encoded.size());
+            // qDebug() << "ENC " << encoded.size();
+            int payload_len = encoded.size();
+            auto header_frame = std::unique_ptr<uint8_t[]>(new uint8_t[sizeof(int)]);
+            memcpy(header_frame.get(), &payload_len, sizeof(payload_len));
+            hevc->push_frame(header_frame.get(), sizeof(int), RTP_NO_FLAGS);
+            std::this_thread::sleep_for(std::chrono::milliseconds(FRAME_INTERVAL));
+            int total_pack = 1 + (payload_len - 1) / PACK_SIZE;
             for (int i = 0; i < total_pack; i++)
-                sock.sendTo(&encoded[i * PACK_SIZE], PACK_SIZE, servAddress, servPort);
-            QThread::msleep(FRAME_INTERVAL);
-            clock_t next_cycle = clock();
-            double duration = (next_cycle - last_cycle) / (double)CLOCKS_PER_SEC;
-            cout << "\teffective FPS:" << (1 / duration) << " \tkbps:" << (PACK_SIZE * total_pack / duration / 1024 * 8) << endl;
-            cout << next_cycle - last_cycle;
-            last_cycle = next_cycle;
+            {
+                // qDebug() << "Sending packet " << i << " of " << total_pack << " " << PACK_SIZE << " " << payload_len;
+                hevc->push_frame(frame.get() + i * PACK_SIZE, PACK_SIZE, RTP_NO_FLAGS);
+                std::this_thread::sleep_for(std::chrono::milliseconds(FRAME_INTERVAL));
+            }
+            frame.reset();
+            header_frame.reset();
+            // if (hevc->push_frame(frame.get(), payload_len, RCE_FRAGMENT_GENERIC) != RTP_OK)
+            // {
+            //     std::cout << "Failed to send RTP frame!" << std::endl;
+            // }
+            std::this_thread::sleep_for(std::chrono::milliseconds(FRAME_INTERVAL));
         }
+        sess->destroy_stream(hevc);
     }
-    catch (SocketException &e)
+    if (sess)
     {
-        cerr << e.what() << endl;
-        exit(1);
+        /* Session must be destroyed manually */
+        ctx.destroy_session(sess);
     }
 }

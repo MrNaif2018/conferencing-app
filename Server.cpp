@@ -10,6 +10,7 @@
 #include <QtConcurrent>
 #include "udpplayer.h"
 #include "screenrecorder.h"
+#include <uvgrtp/lib.hh>
 
 #define BUF_LEN 65540 // Larger than maximum UDP packet size
 
@@ -22,68 +23,76 @@ using namespace cv;
 #include "workerthread.h"
 #include "mainwindow.h"
 
+constexpr int RECEIVER_WAIT_TIME_MS = 10 * 1000;
+
 void MyThread::run()
 {
-    unsigned short servPort = IMAGE_UDP_PORT;
-    try
+    std::cout << "Starting uvgRTP RTP receive hook example" << std::endl;
+    uvgrtp::context ctx;
+    uvgrtp::session *sess = ctx.create_session("0.0.0.0");
+    int flags = RCE_FRAGMENT_GENERIC | RCE_RECEIVE_ONLY;
+    uvgrtp::media_stream *receiver = sess->create_stream(IMAGE_UDP_PORT, RTP_FORMAT_GENERIC, flags);
+    if (receiver)
     {
-        UDPSocket sock(servPort);
-        char buffer[BUF_LEN];      // Buffer for echo string
-        int recvMsgSize;           // Size of received message
-        string sourceAddress;      // Address of datagram source
-        unsigned short sourcePort; // Port of datagram source
-        clock_t last_cycle = clock();
+        // std::cout << "Start receiving frames" << std::endl;
+        bool receive_header = true;
+        int buffer_len = 0;
+        uint8_t *buffer = nullptr;
+        int offset = 0;
         while (1)
         {
-            // Block until we receive message from a client
-            do
+            uvgrtp::frame::rtp_frame *frame = receiver->pull_frame(RECEIVER_WAIT_TIME_MS);
+            if (!frame)
+                break;
+            if (receive_header)
             {
-                recvMsgSize = sock.recvFrom(buffer, BUF_LEN, sourceAddress, sourcePort);
-            } while (recvMsgSize > sizeof(int));
-            int total_pack = ((int *)buffer)[0];
-            cout << "expecting length of packs:" << total_pack << endl;
-            char *longbuf = new char[PACK_SIZE * total_pack];
-            for (int i = 0; i < total_pack; i++)
-            {
-                recvMsgSize = sock.recvFrom(buffer, BUF_LEN, sourceAddress, sourcePort);
-                if (recvMsgSize != PACK_SIZE)
+                // qDebug() << "payload_len header: " << frame->payload_len;
+                if (frame->payload_len != sizeof(int))
                 {
-                    cerr << "Received unexpected size pack:" << recvMsgSize << endl;
+                    cerr << "header size error!" << endl;
                     continue;
                 }
-                memcpy(&longbuf[i * PACK_SIZE], buffer, PACK_SIZE);
+                memcpy(&buffer_len, frame->payload, sizeof(int));
+                buffer = new uint8_t[buffer_len];
+                receive_header = false;
             }
-            cout << "Received packet from " << sourceAddress << ":" << sourcePort << endl;
-            Mat rawData = Mat(1, PACK_SIZE * total_pack, CV_8UC1, longbuf);
-            Mat frame = imdecode(rawData, IMREAD_COLOR);
-            if (frame.size().width == 0)
+            else
             {
-                cerr << "decode failure!" << endl;
-                continue;
+                // qDebug() << "payload_len main: " << frame->payload_len;
+                int to_add = min<int>(buffer_len - offset, frame->payload_len);
+                memcpy(buffer + offset, frame->payload, to_add);
+                offset += to_add;
             }
-            resize(frame, frame, Size(1280, 720), 0, 0, INTER_LINEAR);
-            QImage image = QtOcv::mat2Image(frame);
-            emit signalGUI(image);
-            free(longbuf);
-            QThread::msleep(1);
-            clock_t next_cycle = clock();
-            double duration = (next_cycle - last_cycle) / (double)CLOCKS_PER_SEC;
-            cout << "\teffective FPS:" << (1 / duration) << " \tkbps:" << (PACK_SIZE * total_pack / duration / 1024 * 8) << endl;
-            cout << next_cycle - last_cycle;
-            last_cycle = next_cycle;
+            qDebug() << "offset: " << offset << " buffer_len: " << buffer_len;
+            if (offset == buffer_len)
+            {
+                Mat rawData = Mat(1, buffer_len, CV_8UC1, buffer);
+                Mat cvimg = imdecode(rawData, IMREAD_COLOR);
+                if (cvimg.size().width == 0)
+                {
+                    cerr << "decode failure!" << endl;
+                    continue;
+                }
+                resize(cvimg, cvimg, Size(1280, 720), 0, 0, INTER_LINEAR);
+                QImage image = QtOcv::mat2Image(cvimg);
+                emit signalGUI(image);
+                offset = 0;
+                receive_header = true;
+                delete[] buffer;
+                // qDebug() << buffer;
+            }
+            (void)uvgrtp::frame::dealloc_frame(frame);
         }
+        sess->destroy_stream(receiver);
     }
-    catch (SocketException &e)
-    {
-        cerr << e.what() << endl;
-        exit(1);
-    }
+    if (sess)
+        ctx.destroy_session(sess);
 }
 
 void MainWindow::processImage(const QImage &img)
 {
-    qDebug() << "GOT";
-    imgpix = QPixmap::fromImage(img.copy());
+    // qDebug() << "GOT";
+    imgpix = QPixmap::fromImage(img);
     pixmap->setPixmap(imgpix);
 }
 
