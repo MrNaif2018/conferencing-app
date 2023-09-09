@@ -96,12 +96,12 @@ void MyThread::run()
                 uint8_t *buffer = new uint8_t[buffer_size];
                 for (auto it = chunks[current_frame].begin(); it != chunks[current_frame].end(); it++)
                 {
-                    qDebug() << "in loop " << current_frame << " " << it->seq;
-                    qDebug() << "frame: " << current_frame << " buff_size: " << buffer_size << " size: " << it->size;
+                    // qDebug() << "in loop " << current_frame << " " << it->seq;
+                    // qDebug() << "frame: " << current_frame << " buff_size: " << buffer_size << " size: " << it->size;
                     memcpy(buffer + offset, it->data, it->size);
                     offset += it->size;
                 }
-                qDebug() << "got offset " << offset << " of frame " << current_frame << " with buf " << buffer_size;
+                // qDebug() << "got offset " << offset << " of frame " << current_frame << " with buf " << buffer_size;
                 if (offset == buffer_size)
                 {
                     // qDebug() << "GOT CORRECT DATA " << offset << " frame: " << current_frame;
@@ -135,6 +135,18 @@ void MainWindow::processImage(const QImage &img)
     pixmap->setPixmap(imgpix);
 }
 
+void MainWindow::init_audio_input(char *server)
+{
+    QAudioFormat format = getAudioFormat();
+    audio_input = new QAudioInput(format);
+    audio_socket = new QUdpSocket();
+    // audio_socket->open(QIODevice::WriteOnly);
+    qDebug() << "Binding to port " << AUDIO_UDP_PORT;
+    audio_socket->connectToHost(server, AUDIO_UDP_PORT);
+    audio_socket->waitForConnected();
+    start_audio();
+}
+
 void play_audio_task()
 {
     new UDPPlayer();
@@ -149,10 +161,10 @@ int main(int argc, char **argv)
     }
     QApplication app(argc, argv);
     new UDPPlayer();
-    start_audio_input(argv[1]);
     ScreenRecorder recorder(argv[1]);
     recorder.start();
     MainWindow window;
+    window.init_audio_input(argv[1]);
     window.show();
     MyThread thread;
     QObject::connect(&thread, SIGNAL(signalGUI(const QImage &)), &window, SLOT(processImage(const QImage &)));

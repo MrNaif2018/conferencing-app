@@ -30,7 +30,7 @@ public:
     QGraphicsPixmapItem *pixmap;
     QPixmap imgpix;
     QFrame *frame;
-    QPushButton *pushButton;
+    QPushButton *micButton;
     QPushButton *endButton;
 
     void setupUi(QMainWindow *MainWindow)
@@ -53,13 +53,13 @@ public:
         frame->setStyleSheet(QString::fromUtf8("background-color: gray"));
         frame->setFrameShape(QFrame::StyledPanel);
         frame->setFrameShadow(QFrame::Raised);
-        pushButton = new QPushButton(frame);
-        pushButton->setObjectName(QString::fromUtf8("pushButton"));
-        pushButton->setGeometry(QRect(0, 0, 91, 81));
-        pushButton->setAutoFillBackground(false);
+        micButton = new QPushButton(frame);
+        micButton->setObjectName(QString::fromUtf8("pushButton"));
+        micButton->setGeometry(QRect(0, 0, 91, 81));
+        micButton->setAutoFillBackground(false);
         QIcon icon(QIcon::fromTheme(QString::fromUtf8("audio-input-microphone")));
-        pushButton->setIcon(icon);
-        pushButton->setIconSize(QSize(32, 32));
+        micButton->setIcon(icon);
+        micButton->setIconSize(QSize(32, 32));
         endButton = new QPushButton(frame);
         endButton->setObjectName(QString::fromUtf8("endButton"));
         endButton->setGeometry(QRect(1150, 20, 101, 41));
@@ -75,7 +75,7 @@ public:
     void retranslateUi(QMainWindow *MainWindow)
     {
         MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "MainWindow", nullptr));
-        pushButton->setText(QString());
+        micButton->setText(QString());
         endButton->setText(QCoreApplication::translate("MainWindow", "End", nullptr));
     } // retranslateUi
 };
