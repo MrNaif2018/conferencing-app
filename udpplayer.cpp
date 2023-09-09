@@ -42,8 +42,8 @@ UDPPlayer::UDPPlayer(QObject *parent) : QObject(parent)
 
 void UDPPlayer::playData()
 {
-    qDebug() << "READ";
-    // You need to read datagrams from the udp socket
+    // qDebug() << "READ";
+    //  You need to read datagrams from the udp socket
     while (socket->hasPendingDatagrams())
     {
         QByteArray data;
