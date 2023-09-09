@@ -15,6 +15,7 @@ public:
         : QMainWindow(parent)
     {
         setupUi(this);
+        connect(endButton, SIGNAL(clicked()), QApplication::instance(), SLOT(quit()));
     }
 
 public slots:

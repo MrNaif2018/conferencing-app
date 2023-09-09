@@ -18,8 +18,11 @@ protected:
 public slots:
     void terminateThread()
     {
-        terminate();
-        wait();
+        if (isRunning())
+        {
+            requestInterruption();
+            wait();
+        }
     }
 };
 

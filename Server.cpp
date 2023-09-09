@@ -112,7 +112,7 @@ void MyThread::run()
                         std::cerr << "decode failure!" << std::endl;
                         continue;
                     }
-                    resize(cvimg, cvimg, Size(1280, 720), 0, 0, INTER_LINEAR);
+                    resize(cvimg, cvimg, Size(1278, 638), 0, 0, INTER_LINEAR);
                     QImage image = QtOcv::mat2Image(cvimg);
                     emit signalGUI(image);
                     frames.erase(current_frame);
