@@ -62,5 +62,11 @@ public slots:
         else
             stop_audio();
     }
+    void beforeStopAll()
+    {
+        emit stopAll();
+    }
+signals:
+    void stopAll();
 };
 #endif

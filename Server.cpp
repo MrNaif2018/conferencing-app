@@ -149,6 +149,10 @@ public:
         window->show();
         listen_thread = new MyThread();
         QObject::connect(listen_thread, SIGNAL(signalGUI(const QImage &)), window, SLOT(processImage(const QImage &)));
+        QObject::connect(listen_thread, &QThread::finished, window, &MainWindow::beforeStopAll);
+        QObject::connect(window, &MainWindow::stopAll, [&]()
+                         { stop();
+            startWindow.show(); });
         listen_thread->start();
         QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), listen_thread, SLOT(terminateThread()));
         QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), recorder, SLOT(terminateThread()));
