@@ -1,28 +1,29 @@
-#include <iostream> // For cout and cerr
-#include <cstdlib>  // For atoi()
+#include <iostream>
+#include <cstdlib>
+#include <map>
+#include <set>
+
 #include <QApplication>
 #include <QMainWindow>
 #include <QThread>
 #include <QMutex>
 #include <QDebug>
 #include <QFile>
-#include <QtConcurrent>
-#include "udpplayer.h"
-#include "screenrecorder.h"
+#include <QGraphicsPixmapItem>
+#include <QMessageBox>
+
 #include <uvgrtp/lib.hh>
-#include <map>
-#include <set>
-
-#define BUF_LEN 65540 // Larger than maximum UDP packet size
-
 #include "opencv2/opencv.hpp"
 using namespace cv;
+
+#include "udpplayer.h"
+#include "screenrecorder.h"
 #include "config.h"
 #include "zoomui.h"
 #include "cvmatandqimage.h"
-#include <QGraphicsPixmapItem>
 #include "workerthread.h"
 #include "mainwindow.h"
+#include "startwindow.h"
 
 constexpr int RECEIVER_WAIT_TIME_MS = 10 * 1000;
 
@@ -58,14 +59,12 @@ struct FrameChunk
 
 void MyThread::run()
 {
-    std::cout << "Starting uvgRTP RTP receive hook example" << std::endl;
     uvgrtp::context ctx;
     uvgrtp::session *sess = ctx.create_session("0.0.0.0");
     int flags = RCE_FRAGMENT_GENERIC | RCE_RECEIVE_ONLY;
     uvgrtp::media_stream *receiver = sess->create_stream(IMAGE_UDP_PORT, RTP_FORMAT_GENERIC, flags);
     if (receiver)
     {
-        // std::cout << "Start receiving frames" << std::endl;
         std::map<uint32_t, FrameData> frames;
         std::map<uint32_t, std::set<FrameChunk>> chunks;
         while (!QThread::currentThread()->isInterruptionRequested())
@@ -81,7 +80,6 @@ void MyThread::run()
             uint8_t *data = new uint8_t[real_len];
             memcpy(data, frame->payload + sizeof(uint32_t) + sizeof(int), real_len);
             chunks[current_frame].insert(FrameChunk(current_seq, real_len, data));
-            // qDebug() << "GOT " << chunks[current_frame].begin()->seq;
             if (chunks[current_frame].begin()->seq == 0) // received header
             {
                 int buffer_size;
@@ -96,15 +94,11 @@ void MyThread::run()
                 uint8_t *buffer = new uint8_t[buffer_size];
                 for (auto it = chunks[current_frame].begin(); it != chunks[current_frame].end(); it++)
                 {
-                    // qDebug() << "in loop " << current_frame << " " << it->seq;
-                    // qDebug() << "frame: " << current_frame << " buff_size: " << buffer_size << " size: " << it->size;
                     memcpy(buffer + offset, it->data, it->size);
                     offset += it->size;
                 }
-                // qDebug() << "got offset " << offset << " of frame " << current_frame << " with buf " << buffer_size;
                 if (offset == buffer_size)
                 {
-                    // qDebug() << "GOT CORRECT DATA " << offset << " frame: " << current_frame;
                     Mat rawData = Mat(1, buffer_size, CV_8UC1, buffer);
                     Mat cvimg = imdecode(rawData, IMREAD_COLOR);
                     if (cvimg.size().width == 0)
@@ -128,49 +122,67 @@ void MyThread::run()
         ctx.destroy_session(sess);
 }
 
-void MainWindow::processImage(const QImage &img)
+class SessionManager
 {
-    // qDebug() << "GOT";
-    imgpix = QPixmap::fromImage(img);
-    pixmap->setPixmap(imgpix);
-}
+private:
+    UDPPlayer *player;
+    ScreenRecorder *recorder;
+    MyThread *listen_thread;
+    MainWindow *window;
+    StartWindow &startWindow;
+    std::string ConnectServer;
 
-void MainWindow::init_audio_input(char *server)
-{
-    QAudioFormat format = getAudioFormat();
-    audio_input = new QAudioInput(format);
-    audio_socket = new QUdpSocket();
-    // audio_socket->open(QIODevice::WriteOnly);
-    qDebug() << "Binding to port " << AUDIO_UDP_PORT;
-    audio_socket->connectToHost(server, AUDIO_UDP_PORT);
-    audio_socket->waitForConnected();
-    start_audio();
-}
-
-void play_audio_task()
-{
-    new UDPPlayer();
-}
+public:
+    SessionManager(StartWindow &startWindow) : startWindow(startWindow) {}
+    void start()
+    {
+        startWindow.hide();
+        player = new UDPPlayer();
+        recorder = new ScreenRecorder((char *)ConnectServer.c_str());
+        recorder->start();
+        window = new MainWindow();
+        QObject::connect(window->endButton, &QPushButton::clicked, [&](bool)
+                         {
+            stop();
+            startWindow.show(); });
+        window->init_audio_input((char *)ConnectServer.c_str());
+        window->show();
+        listen_thread = new MyThread();
+        QObject::connect(listen_thread, SIGNAL(signalGUI(const QImage &)), window, SLOT(processImage(const QImage &)));
+        listen_thread->start();
+        QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), listen_thread, SLOT(terminateThread()));
+        QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), recorder, SLOT(terminateThread()));
+    }
+    void stop()
+    {
+        listen_thread->terminateThread();
+        recorder->terminateThread();
+        window->deinit_audio_input();
+        delete listen_thread;
+        delete recorder;
+        delete player;
+        delete window;
+    }
+    void connectButtonClicked()
+    {
+        QString ip = startWindow.ipLabel->text();
+        if (ip.isEmpty() || QHostAddress(ip).isNull())
+        {
+            QMessageBox::warning(&startWindow, "Error", "Please enter an IP address");
+            return;
+        }
+        ConnectServer = ip.toLocal8Bit().data();
+        start();
+    }
+};
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
-    { // Test for correct number of parameters
-        std::cerr << "Usage: " << argv[0] << " <Server>" << std::endl;
-        exit(1);
-    }
     QApplication app(argc, argv);
-    new UDPPlayer();
-    ScreenRecorder recorder(argv[1]);
-    recorder.start();
-    MainWindow window;
-    window.init_audio_input(argv[1]);
-    window.show();
-    MyThread thread;
-    QObject::connect(&thread, SIGNAL(signalGUI(const QImage &)), &window, SLOT(processImage(const QImage &)));
-    thread.start();
-    QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), &thread, SLOT(terminateThread()));
-    QObject::connect(QApplication::instance(), SIGNAL(aboutToQuit()), &recorder, SLOT(terminateThread()));
-    // QtConcurrent::run(play_audio_task);
+    StartWindow startWindow;
+    SessionManager manager(startWindow);
+    QObject::connect(startWindow.connectButton, &QPushButton::clicked, [&]()
+                     { manager.connectButtonClicked(); });
+    startWindow.show();
     return app.exec();
 }

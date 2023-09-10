@@ -1,16 +1,23 @@
+#ifndef UDPPLAYER_H
+#define UDPPLAYER_H
 #include <QObject>
 #include <QtMultimedia/QAudioOutput>
 #include <QtMultimedia/QAudioInput>
 #include <QtMultimedia/QAudioFormat>
 #include <QUdpSocket>
 
-#define AUDIO_UDP_PORT 55455
+#include "config.h"
 
 class UDPPlayer : public QObject
 {
     Q_OBJECT
 public:
     explicit UDPPlayer(QObject *parent = 0);
+    ~UDPPlayer()
+    {
+        delete socket;
+        delete output;
+    }
 
 private slots:
     void playData();
@@ -23,4 +30,4 @@ private:
 
 QAudioFormat getAudioFormat();
 
-void start_audio_input(char *server);
+#endif

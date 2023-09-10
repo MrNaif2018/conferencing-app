@@ -4,7 +4,9 @@
 #include <QPixmap>
 #include <QAudioInput>
 #include <QUdpSocket>
+
 #include "zoomui.h"
+#include "udpplayer.h"
 
 class MainWindow : public QMainWindow, public Ui::MainWindow
 {
@@ -20,10 +22,17 @@ public:
         : QMainWindow(parent), mic_enabled(true)
     {
         setupUi(this);
-        connect(endButton, SIGNAL(clicked()), QApplication::instance(), SLOT(quit()));
         connect(micButton, SIGNAL(clicked()), this, SLOT(toggleMic()));
     }
-    void init_audio_input(char *server);
+    void init_audio_input(char *server)
+    {
+        QAudioFormat format = getAudioFormat();
+        audio_input = new QAudioInput(format);
+        audio_socket = new QUdpSocket();
+        audio_socket->connectToHost(server, AUDIO_UDP_PORT);
+        audio_socket->waitForConnected();
+        start_audio();
+    }
     void start_audio()
     {
         audio_input->start(audio_socket);
@@ -32,9 +41,19 @@ public:
     {
         audio_input->stop();
     }
+    void deinit_audio_input()
+    {
+        stop_audio();
+        delete audio_socket;
+        delete audio_input;
+    }
 
 public slots:
-    void processImage(const QImage &img);
+    void processImage(const QImage &img)
+    {
+        imgpix = QPixmap::fromImage(img);
+        pixmap->setPixmap(imgpix);
+    }
     void toggleMic()
     {
         mic_enabled = !mic_enabled;
