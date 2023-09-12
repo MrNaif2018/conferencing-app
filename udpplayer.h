@@ -15,8 +15,8 @@ public:
     explicit UDPPlayer(QObject *parent = 0);
     ~UDPPlayer()
     {
-        delete socket;
-        delete output;
+        socket->deleteLater();
+        output->deleteLater();
     }
 
 private slots:

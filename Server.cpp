@@ -162,10 +162,10 @@ public:
         listen_thread->terminateThread();
         recorder->terminateThread();
         window->deinit_audio_input();
-        delete listen_thread;
-        delete recorder;
-        delete player;
-        delete window;
+        listen_thread->deleteLater();
+        recorder->deleteLater();
+        player->deleteLater();
+        window->deleteLater();
     }
     void connectButtonClicked()
     {

@@ -44,8 +44,8 @@ public:
     void deinit_audio_input()
     {
         stop_audio();
-        delete audio_socket;
-        delete audio_input;
+        audio_socket->deleteLater();
+        audio_input->deleteLater();
     }
 
 public slots:
