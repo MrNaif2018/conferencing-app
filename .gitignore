@@ -58,3 +58,6 @@ compile_commands.json
 # binaries
 Client
 Server
+
+build/
+config.ini

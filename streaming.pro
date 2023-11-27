@@ -16,5 +16,6 @@ win32: QT += winextras
 unix:!macx: LIBS += -lX11 -lXext -lXfixes
 
 SOURCES += cvmatandqimage.cpp udpplayer.cpp screenrecorder.cpp Server.cpp
-HEADERS += cvmatandqimage.h udpplayer.h imageutil.h screenrecorder.h zoomui.h workerthread.h mainwindow.h startwindow.h
+HEADERS += cvmatandqimage.h udpplayer.h imageutil.h screenrecorder.h zoomui.h workerthread.h mainwindow.h startwindow.h settingswindow.h
 
+RESOURCES = resources.qrc

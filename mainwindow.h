@@ -57,7 +57,7 @@ public slots:
     void toggleMic()
     {
         mic_enabled = !mic_enabled;
-        QImage img(mic_enabled == true ? "mic-on.png" : "mic-off.png");
+        QImage img(mic_enabled == true ? ":/mic-on.png" : ":/mic-off.png");
         if (mic_enabled)
             start_audio();
         else

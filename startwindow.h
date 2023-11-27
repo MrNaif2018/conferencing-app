@@ -2,6 +2,7 @@
 #define STARTWINDOW_H
 #include <QWidget>
 #include <QtCore/QVariant>
+#include <QtGui/QIcon>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QLineEdit>
@@ -15,6 +16,7 @@ public:
     QLabel *label_2;
     QLineEdit *ipLabel;
     QPushButton *connectButton;
+    QPushButton *settingsButton;
 
     void setupUi(QWidget *StartWindow)
     {
@@ -45,6 +47,13 @@ public:
         connectButton->setObjectName(QString::fromUtf8("connectButton"));
         connectButton->setGeometry(QRect(600, 420, 80, 23));
         connectButton->setStyleSheet(QString::fromUtf8("background-color: rgb(87, 227, 137);"));
+        settingsButton = new QPushButton(StartWindow);
+        settingsButton->setObjectName(QString::fromUtf8("settingsButton"));
+        settingsButton->setGeometry(QRect(1170, 640, 61, 51));
+        QIcon icon;
+        icon.addFile(QString::fromUtf8(":/config.png"), QSize(), QIcon::Normal, QIcon::Off);
+        settingsButton->setIcon(icon);
+        settingsButton->setIconSize(QSize(32, 32));
 
         retranslateUi(StartWindow);
 
@@ -58,6 +67,7 @@ public:
         label_2->setText(QCoreApplication::translate("StartWindow", "Connect to server:", nullptr));
         ipLabel->setPlaceholderText(QCoreApplication::translate("StartWindow", "IP address", nullptr));
         connectButton->setText(QCoreApplication::translate("StartWindow", "Connect", nullptr));
+        settingsButton->setText(QString());
     } // retranslateUi
 };
 

@@ -9,9 +9,13 @@ class ScreenRecorder : public QThread
     Q_OBJECT
 private:
     char *server;
+    int pack_size;
+    int frame_interval;
+    int quality;
 
 public:
-    ScreenRecorder(char *server) : server(server) {}
+    ScreenRecorder(char *server, int pack_size, int frame_interval, int quality)
+        : server(server), pack_size(pack_size), frame_interval(frame_interval), quality(quality) {}
 
 protected:
     virtual void run();

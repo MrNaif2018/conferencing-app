@@ -1,0 +1,7 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file alias="mic-off.png">images/mic-off.png</file>
+    <file alias="mic-on.png">images/mic-on.png</file>
+    <file alias="config.png">images/config.png</file>
+</qresource>
+</RCC>

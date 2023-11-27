@@ -57,7 +57,7 @@ public:
         micButton->setObjectName(QString::fromUtf8("pushButton"));
         micButton->setGeometry(QRect(0, 0, 91, 81));
         micButton->setAutoFillBackground(false);
-        micButton->setIcon(QPixmap::fromImage(QImage("mic-on.png")));
+        micButton->setIcon(QPixmap::fromImage(QImage(":/mic-on.png")));
         micButton->setIconSize(QSize(64, 64));
         endButton = new QPushButton(frame);
         endButton->setObjectName(QString::fromUtf8("endButton"));

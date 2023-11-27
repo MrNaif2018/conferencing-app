@@ -11,6 +11,7 @@
 #include <QFile>
 #include <QGraphicsPixmapItem>
 #include <QMessageBox>
+#include <QSettings>
 
 #include <uvgrtp/lib.hh>
 #include "opencv2/opencv.hpp"
@@ -24,6 +25,7 @@ using namespace cv;
 #include "workerthread.h"
 #include "mainwindow.h"
 #include "startwindow.h"
+#include "settingswindow.h"
 
 constexpr int RECEIVER_WAIT_TIME_MS = 10 * 1000;
 
@@ -130,15 +132,31 @@ private:
     MyThread *listen_thread;
     MainWindow *window;
     StartWindow &startWindow;
+    SettingsWindow *settingsWindow;
     std::string ConnectServer;
 
 public:
-    SessionManager(StartWindow &startWindow) : startWindow(startWindow) {}
+    SessionManager(StartWindow &startWindow) : startWindow(startWindow)
+    {
+        QObject::connect(startWindow.settingsButton, &QPushButton::clicked, [&]()
+                         {
+            settingsWindow = new SettingsWindow();
+            QObject::connect(settingsWindow->saveButton, &QPushButton::clicked, [&]()
+                             {
+                settingsWindow->saveSettings();
+                settingsWindow->close();
+                settingsWindow->deleteLater(); });
+            settingsWindow->show(); });
+    }
     void start()
     {
         startWindow.hide();
         player = new UDPPlayer();
-        recorder = new ScreenRecorder((char *)ConnectServer.c_str());
+        QSettings settings(SETTINGS_FILE, QSettings::IniFormat);
+        int pack_size = settings.value("pack_size", PACK_SIZE).toInt();
+        int frame_interval = (1000 / settings.value("fps", FPS).toInt());
+        int quality = settings.value("quality", ENCODE_QUALITY).toInt();
+        recorder = new ScreenRecorder((char *)ConnectServer.c_str(), pack_size, frame_interval, quality);
         recorder->start();
         window = new MainWindow();
         QObject::connect(window->endButton, &QPushButton::clicked, [&](bool)
