@@ -141,6 +141,7 @@ public:
         QObject::connect(startWindow.settingsButton, &QPushButton::clicked, [&]()
                          {
             settingsWindow = new SettingsWindow();
+            settingsWindow->setFixedSize(settingsWindow->width(), settingsWindow->height());
             QObject::connect(settingsWindow->saveButton, &QPushButton::clicked, [&]()
                              {
                 settingsWindow->saveSettings();
@@ -159,6 +160,7 @@ public:
         recorder = new ScreenRecorder((char *)ConnectServer.c_str(), pack_size, frame_interval, quality);
         recorder->start();
         window = new MainWindow();
+        window->setFixedSize(window->width(), window->height());
         QObject::connect(window->endButton, &QPushButton::clicked, [&](bool)
                          {
             stop();
@@ -202,6 +204,7 @@ int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
     StartWindow startWindow;
+    startWindow.setFixedSize(startWindow.width(), startWindow.height());
     SessionManager manager(startWindow);
     QObject::connect(startWindow.connectButton, &QPushButton::clicked, [&]()
                      { manager.connectButtonClicked(); });
